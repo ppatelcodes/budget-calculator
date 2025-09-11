@@ -6,3 +6,4 @@ seaborn
 plotly
 fpdf2
 openpyxl
+reportlab
