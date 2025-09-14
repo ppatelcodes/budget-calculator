@@ -6,4 +6,5 @@ seaborn
 plotly
 fpdf2
 openpyxl
-reportlab
+datetime
+kaleido==0.2.1
