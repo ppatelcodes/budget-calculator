@@ -113,48 +113,6 @@ def calculate_debt_payoff_time(current_balance, monthly_payment, annual_rate):
     months = -np.log(1 - (current_balance * monthly_rate) / monthly_payment) / np.log(1 + monthly_rate)
     return months
 
-def generate_spending_trend_data():
-    """Generate sample spending trend data"""
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
-    categories = st.session_state.expense_categories[:6]
-    data = []
-    
-    for month in months:
-        for category in categories:
-            amount = np.random.uniform(100, 1000)
-            data.append({'Month': month, 'Category': category, 'Amount': amount})
-    
-    return pd.DataFrame(data)
-
-def create_pdf_report():
-    """Generate PDF report"""
-    buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
-    
-    # Title
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, height - 50, "Budget Report")
-    p.drawString(50, height - 70, f"Generated on: {datetime.now().strftime('%Y-%m-%d')}")
-    
-    # Summary
-    y_position = height - 120
-    p.setFont("Helvetica", 12)
-    
-    total_income = sum([convert_to_monthly(item['amount'], item['frequency']) for item in st.session_state.income_data])
-    total_expenses = sum([convert_to_monthly(item['amount'], item['frequency']) for item in st.session_state.expense_data])
-    
-    p.drawString(50, y_position, f"Total Monthly Income: ₹{total_income:,.2f}")
-    y_position -= 20
-    p.drawString(50, y_position, f"Total Monthly Expenses: ₹{total_expenses:,.2f}")
-    y_position -= 20
-    p.drawString(50, y_position, f"Net Cash Flow: ₹{total_income - total_expenses:,.2f}")
-    
-    p.showPage()
-    p.save()
-    buffer.seek(0)
-    return buffer
-
 def dashboard_page():
     st.header("📊 Financial Dashboard")
     
@@ -786,118 +744,111 @@ def debt_management_page():
     else:
         st.info("No debts added yet. Add your first debt above to start tracking!")
 
-def reports_analytics_page():
-    st.header("📊 Reports & Analytics")
-    
-    # Generate comprehensive reports
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("📄 Generate PDF Report"):
-            pdf_buffer = create_pdf_report()
-            st.download_button(
-                label="Download PDF Report",
-                data=pdf_buffer.getvalue(),
-                file_name=f"budget_report_{datetime.now().strftime('%Y%m%d')}.pdf",
-                mime="application/pdf"
-            )
-    
-    with col2:
-        if st.button("📈 Generate Monthly Analysis"):
-            st.info("Monthly analysis generated!")
-    
-    # Spending trends
-    st.subheader("📈 Spending Trends")
-    
-    if st.session_state.expense_data:
-        # Generate sample trend data (in a real app, this would come from historical data)
-        trend_data = generate_spending_trend_data()
-        
-        fig = px.line(trend_data, x='Month', y='Amount', color='Category', 
-                     title="Monthly Spending Trends by Category")
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Heat map
-        pivot_data = trend_data.pivot(index='Category', columns='Month', values='Amount')
-        fig = px.imshow(pivot_data, title="Monthly Spending Heat Map",
-                       labels=dict(x="Month", y="Category", color="Amount (₹)"), aspect="auto")
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Radar chart for expense balance
-        if len(st.session_state.expense_categories) > 3:
-            categories = st.session_state.expense_categories[:6]  # Limit to 6 for readability
-            
-            # Calculate average spending per category
-            expense_df = pd.DataFrame(st.session_state.expense_data)
-            if not expense_df.empty:
-                category_spending = expense_df.groupby('category')['monthly_amount'].sum().reindex(categories, fill_value=0)
-                
-                fig = go.Figure()
-                fig.add_trace(go.Scatterpolar(
-                    r=category_spending.values,
-                    theta=categories,
-                    fill='toself',
-                    name='Current Spending'
-                ))
-                
-                fig.update_layout(
-                    polar=dict(
-                        radialaxis=dict(
-                            visible=True,
-                            range=[0, max(category_spending.values) * 1.1] if max(category_spending.values) > 0 else [0, 100]
-                        )),
-                    showlegend=True,
-                    title="Spending Balance Across Categories"
-                )
-                st.plotly_chart(fig, use_container_width=True)
-    
-    else:
-        st.info("Add expenses to see spending trend analysis")
-    
-    # Savings vs Spending Donut Chart
-    st.subheader("💰 Savings vs Spending Analysis")
-    
-    total_income = sum([convert_to_monthly(item['amount'], item['frequency']) for item in st.session_state.income_data])
-    total_expenses = sum([convert_to_monthly(item['amount'], item['frequency']) for item in st.session_state.expense_data])
-    net_savings = max(0, total_income - total_expenses)
-    
-    if total_income > 0:
-        savings_spending_data = pd.DataFrame({
-            'Category': ['Savings', 'Spending'],
-            'Amount': [net_savings, total_expenses]
-        })
-        
-        fig = px.pie(savings_spending_data, values='Amount', names='Category', 
-                    title="Monthly Savings vs Spending Ratio", hole=0.4,  # Creates donut chart
-                    color_discrete_map={'Savings': '#2E8B57', 'Spending': '#DC143C'})
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Goal progress tracking
-        if st.session_state.savings_goals:
-            st.subheader("🎯 Goal Progress Tracking")
-            
-            for goal in st.session_state.savings_goals:
-                progress = (goal['current_amount'] / goal['target_amount']) * 100
-                
-                fig = go.Figure(go.Indicator(
-                    mode = "gauge+number+delta",
-                    value = progress,
-                    domain = {'x': [0, 1], 'y': [0, 1]},
-                    title = {'text': f"{goal['name']} Progress"},
-                    delta = {'reference': 100},
-                    gauge = {'axis': {'range': [None, 100]},
-                            'bar': {'color': "darkgreen"},
-                            'steps': [
-                                {'range': [0, 50], 'color': "lightgray"},
-                                {'range': [50, 80], 'color': "gray"}],
-                            'threshold': {'line': {'color': "red", 'width': 4},
-                                        'thickness': 0.75, 'value': 90}}))
-                
-                fig.update_layout(height=300)
-                st.plotly_chart(fig, use_container_width=True)
-    
-    else:
-        st.info("Add income and expenses to see savings analysis")
+def get_expense_dataframe():
+    """Return a DataFrame of all expenses with monthly amounts"""
+    if not st.session_state.expense_data:
+        return pd.DataFrame()
+    df = pd.DataFrame(st.session_state.expense_data)
+    df["MonthlyAmount"] = df.apply(
+        lambda x: convert_to_monthly(x["amount"], x["frequency"]), axis=1
+    )
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"])
+    return df
+
+
+def create_pdf_report_with_charts(df, fig_pie):
+    """Generate PDF report with totals, category breakdown, and pie chart"""
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    # Title
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(50, height - 50, "Expense Report & Analysis")
+    p.drawString(50, height - 70, f"Generated on: {datetime.now().strftime('%Y-%m-%d')}")
+
+    y_position = height - 120
+    p.setFont("Helvetica", 12)
+
+    total_expenses = df["MonthlyAmount"].sum()
+    p.drawString(50, y_position, f"Total Monthly Expenses: ₹{total_expenses:,.2f}")
+    y_position -= 30
+
+    # Category breakdown
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(50, y_position, "Expenses by Category:")
+    y_position -= 20
+    p.setFont("Helvetica", 11)
+    for _, row in df.groupby("category")["MonthlyAmount"].sum().reset_index().iterrows():
+        p.drawString(60, y_position, f"- {row['category']}: ₹{row['MonthlyAmount']:,.2f}")
+        y_position -= 18
+
+    # Add pie chart to PDF
+    img_buf = io.BytesIO()
+    fig_pie.write_image(img_buf, format="PNG")
+    img_buf.seek(0)
+    img = ImageReader(img_buf)
+    p.drawImage(img, 50, 200, width=500, height=300, preserveAspectRatio=True)
+
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return buffer
+
+
+def report_analysis_page():
+    st.header("📑 Expense Report & Analysis")
+
+    df = get_expense_dataframe()
+    if df.empty:
+        st.info("No expenses added yet. Please add expenses to view the report & analysis.")
+        return
+
+    total_expenses = df["MonthlyAmount"].sum()
+    st.subheader(f"Total Monthly Expenses: ₹{total_expenses:,.2f}")
+
+    # Pie chart by category
+    category_summary = df.groupby("category")["MonthlyAmount"].sum().reset_index()
+    fig_pie = px.pie(
+        category_summary,
+        names="category",
+        values="MonthlyAmount",
+        title="Expenses by Category",
+        hole=0.4,
+    )
+    st.plotly_chart(fig_pie, use_container_width=True)
+
+    # Bar chart breakdown
+    fig_bar = px.bar(
+        category_summary,
+        x="category",
+        y="MonthlyAmount",
+        title="Monthly Expense Breakdown",
+        text_auto=True,
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+    # Trend over time (if date available)
+    if "date" in df.columns:
+        time_summary = df.groupby(df["date"].dt.to_period("M"))["MonthlyAmount"].sum()
+        time_summary.index = time_summary.index.to_timestamp()
+
+        fig_line = px.line(
+            time_summary,
+            x=time_summary.index,
+            y=time_summary.values,
+            markers=True,
+            title="Expense Trend Over Time",
+        )
+        st.plotly_chart(fig_line, use_container_width=True)
+
+    # Export PDF
+    if st.button("📥 Export Report to PDF"):
+        pdf_buffer = create_pdf_report_with_charts(df, fig_pie)
+        b64 = base64.b64encode(pdf_buffer.read()).decode()
+        href = f'<a href="data:application/pdf;base64,{b64}" download="expense_report.pdf">Download PDF Report</a>'
+        st.markdown(href, unsafe_allow_html=True)
 
 # Main application
 def main():
@@ -954,7 +905,7 @@ def main():
     elif st.session_state.current_page == "Debt Management":
         debt_management_page()
     elif st.session_state.current_page == "Reports & Analytics":
-        reports_analytics_page()
+        report_analysis_page()
 
 if __name__ == "__main__":
     main()
