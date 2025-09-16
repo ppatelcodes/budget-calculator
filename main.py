@@ -2,10 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import numpy as np
 from datetime import datetime, timedelta
-import json
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
@@ -17,7 +15,7 @@ st.set_page_config(
     page_title="Smart Budget Calculator",
     page_icon="💰",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded" 
 )
 
 # Custom CSS for modern UI
@@ -198,7 +196,7 @@ def income_page():
             income_name = st.text_input("Income Source Name", placeholder="e.g., Salary, Freelance")
         
         with col2:
-            income_amount = st.number_input("Amount", min_value=0.0, step=0.01)
+            income_amount = st.number_input("Amount", min_value=0.0, step=1.00)
         
         with col3:
             income_frequency = st.selectbox("Frequency", ["Weekly", "Bi-weekly", "Monthly", "Quarterly", "Annually"])
@@ -265,13 +263,13 @@ def expenses_page():
         
         with col1:
             expense_name = st.text_input("Expense Name", placeholder="e.g., Rent, Groceries")
-            expense_amount = st.number_input("Amount", min_value=0.0, step=0.01, key="expense_amount")
+            expense_amount = st.number_input("Amount", min_value=0.0, step=1.00, key="expense_amount")
             expense_category = st.selectbox("Category", st.session_state.expense_categories)
         
         with col2:
             expense_frequency = st.selectbox("Frequency", ["Weekly", "Bi-weekly", "Monthly", "Quarterly", "Annually"], key="expense_freq")
             expense_type = st.selectbox("Type", ["Recurring", "One-time"])
-            expense_limit = st.number_input("Monthly Limit (Optional)", min_value=0.0, step=0.01)
+            expense_limit = st.number_input("Monthly Limit (Optional)", min_value=0.0, step=1.00)
         
         # Custom category option
         if expense_category == "Other":
@@ -379,14 +377,14 @@ def savings_investments_page():
         
         with col1:
             goal_name = st.text_input("Goal Name", placeholder="e.g., Emergency Fund, Vacation")
-            target_amount = st.number_input("Target Amount", min_value=0.0, step=0.01)
+            target_amount = st.number_input("Target Amount", min_value=0.0, step=1.00)
         
         with col2:
-            current_amount = st.number_input("Current Amount", min_value=0.0, step=0.01)
+            current_amount = st.number_input("Current Amount", min_value=0.0, step=1.00)
             target_date = st.date_input("Target Date")
         
         with col3:
-            monthly_contribution = st.number_input("Monthly Contribution", min_value=0.0, step=0.01)
+            monthly_contribution = st.number_input("Monthly Contribution", min_value=0.0, step=1.00)
         
         if st.button("Add Savings Goal"):
             if goal_name and target_amount > 0:
@@ -438,11 +436,11 @@ def savings_investments_page():
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    updated_current = st.number_input("Current Amount", value=goal['current_amount'], min_value=0.0, step=0.01)
-                    updated_target = st.number_input("Target Amount", value=goal['target_amount'], min_value=0.0, step=0.01)
+                    updated_current = st.number_input("Current Amount", value=goal['current_amount'], min_value=0.0, step=1.00)
+                    updated_target = st.number_input("Target Amount", value=goal['target_amount'], min_value=0.0, step=1.00)
                 
                 with col2:
-                    updated_contribution = st.number_input("Monthly Contribution", value=goal['monthly_contribution'], min_value=0.0, step=0.01)
+                    updated_contribution = st.number_input("Monthly Contribution", value=goal['monthly_contribution'], min_value=0.0, step=1.00)
                     updated_date = st.date_input("Target Date", value=datetime.strptime(goal['target_date'], '%Y-%m-%d').date())
                 
                 col1, col2 = st.columns(2)
@@ -475,8 +473,8 @@ def savings_investments_page():
             investment_type = st.selectbox("Type", ["Stocks", "Bonds", "ETF", "Mutual Fund", "Crypto", "Real Estate"])
         
         with col2:
-            initial_investment = st.number_input("Initial Investment", min_value=0.0, step=0.01)
-            current_value = st.number_input("Current Value", min_value=0.0, step=0.01)
+            initial_investment = st.number_input("Initial Investment", min_value=0.0, step=1.00)
+            current_value = st.number_input("Current Value", min_value=0.0, step=1.00)
         
         with col3:
             expected_return = st.number_input("Expected Annual Return (%)", min_value=0.0, max_value=100.0, step=0.1)
@@ -528,13 +526,13 @@ def debt_management_page():
         with col1:
             debt_name = st.text_input("Debt Name", placeholder="e.g., Credit Card, Student Loan")
             debt_type = st.selectbox("Type", ["Credit Card", "Personal Loan", "Car Loan", "Home Loan", "Student Loan", "Other"])
-            principal = st.number_input("Original Loan Amount", min_value=0.0, step=0.01)
-            interest_rate = st.number_input("Annual Interest Rate (%)", min_value=0.0, max_value=100.0, step=0.01)
+            principal = st.number_input("Original Loan Amount", min_value=0.0, step=1.00)
+            interest_rate = st.number_input("Annual Interest Rate (%)", min_value=0.0, max_value=100.0, step=1.00)
         
         with col2:
             loan_tenure_months = st.number_input("Loan Tenure (months)", min_value=1, step=1)
             loan_start_date = st.date_input("Loan Start Date", value=datetime.now() - timedelta(days=365))
-            monthly_payment_made = st.number_input("Monthly Payment You've Been Making", min_value=0.0, step=0.01)
+            monthly_payment_made = st.number_input("Monthly Payment You've Been Making", min_value=0.0, step=1.00)
         
         # Calculate loan details automatically
         if st.button("Add Debt"):
@@ -681,7 +679,7 @@ def debt_management_page():
                             "New Monthly Payment",
                             value=debt['monthly_payment_made'],
                             min_value=0.0,
-                            step=0.01,
+                            step=1.00,
                             key=f"new_payment_input_{i}"
                         )
                         
@@ -700,7 +698,7 @@ def debt_management_page():
                                 st.rerun()
         
         # Debt visualization
-        if len(st.session_state.debts) > 1:
+        if len(st.session_state.debts) >= 1:
             st.subheader("📈 Debt Analysis")
             
             col1, col2 = st.columns(2)
